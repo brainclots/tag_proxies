@@ -17,26 +17,41 @@ else
 fi
 
 TECMDR=/usr/local/tripwire/te/tecommander/bin/tecommander.sh
+CUSTOMER=$(echo $1 | sed -e 's/.*auth_files\/\(.*\)_auth.xml/\1/')
 
 # First, create a report from the desired console with the nodes that have a 'proxy_ip' element
 
-echo -e "\n    Running report of nodes with proxy_ip element...\n"
+echo -e "\n    Running report of nodes with proxy_ip element on the $CUSTOMER console...\n"
 $TECMDR report \
 	-T "Which Proxy for each node" \
 	-t elementcontents_rpt \
 	-P "BooleanCriterion,currentVersionsOnly,true:MatchCriterion,elementName,equals,proxy_ip:SelectCriterion,elementExists,Yes,yes" \
 	-F xml \
-	-o proxy-${SUDO_USER}.xml \
+	-w "No Proxy Tagged" \
+	-o /tmp/proxy-${CUSTOMER}.xml \
 	-M $AUTH \
-	-Q
+	-Q -q
+
+# See if report was created successfully
+[[ ! -e /tmp/proxy-${CUSTOMER}.xml ]] && { echo "Report not created. Troubleshoot TECommander output." ; exit 1; }
+
+# Now, check to see that the tagset and tags required exist in the console.
+PROXY_IPS=$(sed -n /tmp/proxy-${CUSTOMER}.xml -e '/String name=\(\"content\"\)/p' | sed -ne 's/^.*>\(.*\)<.*/\1/p' | sed '/^$/d' | sort | uniq)
+echo Creating tags for each proxy identified...
+> proxy-tags-${CUSTOMER}.txt
+for PROXY in $PROXY_IPS ; do
+	echo avcreatetag -S \"Proxy Host\" -T $PROXY -M $AUTH -Q -q >> proxy-tags-${CUSTOMER}.txt
+done
+$TECMDR @proxy-tags-${CUSTOMER}.txt
+rm -f proxy-tags-${CUSTOMER}.txt
 
 # Next, use the report to create an input file for TECommander
-> tags-${SUDO_USER}.txt
-IFS=" " read -r -a INFO <<< $(sed -n proxy-${SUDO_USER}.xml -e '/String name=\(\"node\"\|\"content\"\)/p' | sed -ne 's/^.*>\(.*\)<.*/\1/p')
+> /tmp/tags-${CUSTOMER}.txt
+IFS=" " read -r -a INFO <<< $(sed -n /tmp/proxy-${CUSTOMER}.xml -e '/String name=\(\"node\"\|\"content\"\)/p' | sed -ne 's/^.*>\(.*\)<.*/\1/p')
 for (( i=0; i<${#INFO[@]} ; i+=2 )) ; do
-        echo avtagasset -n ${INFO[i]} -S \"Proxy Host\" -T ${INFO[i+1]} -M $AUTH -Q >> tags-${SUDO_USER}.txt
+        echo avtagasset -n ${INFO[i]} -S \"Proxy Host\" -T ${INFO[i+1]} -M $AUTH -Q >> /tmp/tags-${CUSTOMER}.txt
 done
 
-echo Verify the data in tags-${SUDO_USER}.txt, then pass it to tecommander like so:
+echo Verify the data in /tmp/tags-${CUSTOMER}.txt, then pass it to tecommander like so:
 
-echo "    tecommander.sh @tags-${SUDO_USER}.txt"
+echo "    tecommander.sh @/tmp/tags-${CUSTOMER}.txt"
