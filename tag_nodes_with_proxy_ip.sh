@@ -3,8 +3,8 @@
 # Script to tag all nodes with proxy IP
 # Assumptions:
 #   1. A rule exists to gather the proxy IP in use from the agent config file (storing in an element named 'proxy_ip')
-#   2. A Tag Set named "Proxy Host" exists, containing a tag for each proxy IP a node can connect through.
-#   3. There is a TECommander auth file for the console in question, that is accessible from where the rule is to be
+#   2. A Tag Set named "Proxy Host" exists.
+#   3. There is a TECommander auth file for the console in question, that is accessible from where the script is to be
 #      run (where TECommander is installed)
 
 [[ -z "$1" ]] && { echo -e "\n   Usage: $0 auth_files/<customer>_auth.xml \n   Supply the path to an auth file for the customer's console.\n" ; exit 1; }
