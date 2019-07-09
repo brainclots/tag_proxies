@@ -4,7 +4,9 @@
 # Assumptions:
 #   1. A rule exists to gather the proxy IP in use from the agent config file (storing in an element named 'proxy_ip')
 #   2. A Tag Set named "Proxy Host" exists.
-#   3. There is a TECommander auth file for the console in question, that is accessible from where the script is to be
+#   3. A saved filter, named "No Proxy Tagged",  is in place that contains all nodes with monitoring enabled but no 
+#      proxy host tag.
+#   4. There is a TECommander auth file for the console in question, that is accessible from where the rule is to be
 #      run (where TECommander is installed)
 
 [[ -z "$1" ]] && { echo -e "\n   Usage: $0 auth_files/<customer>_auth.xml \n   Supply the path to an auth file for the customer's console.\n" ; exit 1; }
